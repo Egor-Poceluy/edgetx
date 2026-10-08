@@ -122,7 +122,7 @@ class Firmware
       int           slowScale         {10};
       TeleCstmScrns teleCstmScrns;
       Limits        timers            {CPN_MAX_TIMERS, 8};
-      int           maxTopBarZones    {0};
+      int           topBarZones       {0};
       int           maxTrainerInputs  {16};
       int           trimsRange        {128};
       int           maxVoicesFileLen  {8};
@@ -135,7 +135,7 @@ class Firmware
     explicit Firmware(const QString & id);
     virtual ~ Firmware() {}
 
-    Board * getBoard() const { return m_board; }
+    Board * getBoard(bool forceLoad = true) const;
     const QString getDownloadId() const { return m_defn.dwnldId.c_str(); }
     const QString getId() const { return m_id; } // do not use m_defn.id as it does not have edgetx- prefix
     const QString getFullName() const;
@@ -155,7 +155,7 @@ class Firmware
     bool isValid() { return m_valid; }
     bool isSupported() { return m_supported; }
 
-    static Firmware * getFirmware(const QString & id);
+    static Firmware * getFirmware(const QString & id, bool forceLoad = true);
     static bool isAvailable(const QString & id);
 
     static QList<Firmware *> getRegisteredFirmwares();

@@ -3,16 +3,16 @@
   "modelImage": {
     "filters": "*.bmp",
     "keepExtn": false,
-    "nameLen": 10
+    "name": 10
   },
   "modelSlots": 60,
   "keyShortcuts": 0,
   "quickMenuFavs": 0,
   "sensors": {
-    "cnt": 60
+    "max": 60
   },
   "teleCstmScrns": {
-    "cnt": 4,
+    "max": 4,
     "bars": 4,
     "perLine": 4,
     "lines": 4

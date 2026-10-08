@@ -71,7 +71,7 @@ PrefsProfilePanel::PrefsProfilePanel(QWidget * parent, Firmware * firmware, Boar
     this->profile.fwType(this->fwTypeData->text());
   });
   fwTypeData->setBindPostChanged([this] {
-    emit radioChanged(this->firmware);
+    emit radioChanged(Firmware::getFirmware(this->fwTypeData->text()));
   });
 
   // this widget displays the firmware full name
@@ -104,7 +104,6 @@ void PrefsProfilePanel::onFirmwareTypePressed()
   FirmwarePicker * picker = new FirmwarePicker(this, fwTypeData->text());
   connect(picker, &FirmwarePicker::firmwareTypeChanged, this, [this] (const QString newType) {
     this->fwTypeData->setText(newType);
-    this->update();
   });
   picker->exec();
   picker->deleteLater();
@@ -516,7 +515,6 @@ void PrefsProfilePanel::onRadioChanged(Firmware * firmware, bool deferUpdate)
 {
   const Board *prevBoard = board;
   PrefsPanel::onRadioChanged(firmware, true);
-  fwTypeData->setText(firmware->getId());
   populateFirmwareOptions();
   panelItemModels->getItemModel(FIM_TEMPLATESETUP)->setFilterFlags(board->getCapability(Capability::Air) ?
                                                                    GeneralSettings::RadioTypeContextAir :

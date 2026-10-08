@@ -43,8 +43,8 @@ FirmwarePicker::FirmwarePicker(QWidget * parent, const QString & type) :
 
   foreach(Firmware * firmware, Firmware::getRegisteredFirmwares()) {
     QStringList item;
-    item.append(firmware->getBoard()->getCapabilityStr(Capability::Manufacturer) % " " % firmware->getName());
-    item.append(firmware->getBoard()->getCapabilityStr(Capability::Manufacturer));
+    item.append(firmware->getBoard(false)->getCapabilityStr(Capability::Manufacturer) % " " % firmware->getName());
+    item.append(firmware->getBoard(false)->getCapabilityStr(Capability::Manufacturer));
     item.append(firmware->getName());
     item.append(firmware->getId());
     list.append(item);

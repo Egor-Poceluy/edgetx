@@ -30,7 +30,7 @@ class FirmwareFactory
 
     virtual ~FirmwareFactory() {}
 
-    Firmware* getFirmware() const { return m_firmware; }
+    Firmware* firmware() const { return m_firmware; }
 
   private:
     Firmware *m_firmware;
@@ -42,20 +42,21 @@ class FirmwareFactories
     explicit FirmwareFactories();
     virtual ~FirmwareFactories();
 
-    Firmware* getFirmware(const QString & id) const;
+    Firmware* getFirmware(const QString & id, bool forceLoad = true) const;
     bool isAvailable(const QString & id) const;
 
     bool registerFirmware(const QString & id);
     bool registerFactory(FirmwareFactory * factory);
     void unregisterFactories();
     void registerAllFirmwares();
-    bool loadDefinition(const QString & id);
 
     QMap<QString, QString> registeredFirmwares() const;
     QList<Firmware *> getRegisteredFirmwares() const;
 
   private:
     QList<FirmwareFactory *> registeredFactories;
+
+    bool loadDefinition(const QString & id);
 };
 
 extern FirmwareFactories* gFirmwareFactories;

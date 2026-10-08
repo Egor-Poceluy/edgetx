@@ -2,7 +2,7 @@
   "hidden": true,
   "categories": true,
   "labels": true,
-  "modelList": true,
+  "modelsList": true,
   "modelImage": {
     "filters": "*.bmp|*.jpg|*.png",
     "keepExtn": false,

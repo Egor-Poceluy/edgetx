@@ -44,6 +44,7 @@ Board * BoardFactories::getBoard(const QString & id, bool forceLoad) const
 {
   for (auto *registeredFactory : registeredBoardFactories) {
     auto board = registeredFactory->board();
+
     if (board->getId() == id) {
       if (!board->isLoaded() && forceLoad)
         board->loadDefinition();
@@ -52,6 +53,7 @@ Board * BoardFactories::getBoard(const QString & id, bool forceLoad) const
     }
   }
 
+  qDebug() << "Error: board id:" << id << "not registered";
   return m_default;
 }
 

@@ -181,6 +181,9 @@ Board::Board(const QString & id) :
     if (!Json::value(bdobj, "hidden", false, false).toBool()) {
       m_name = Json::value(bdobj, "name", false, "unknown").toString();
       m_hwdefn = Json::value(bdobj, "hwdefn", false, id).toString();
+      // required for profile firmware change
+      if (Json::exists(bdobj, "modules"))
+        loadModules(bdobj.value("modules"));
 
       if (Json::load(hwdoc, QString("%1/%2.json").arg(HWDEFNSDIR).arg(m_hwdefn))) {
         if (hwdoc->object().value("identity").isObject()) {
@@ -1270,7 +1273,8 @@ bool Board::loadDefinition(const QString & path)
     // skip early to save processing time and avoid unknown key warning messages
     if (it.key() == "hidden"    || it.key() == "basedOn" || it.key() == "supported" ||
         it.key() == "hwdefn" || it.key() == "name" || it.key() == "comments" ||
-        it.key() == "trainer" || it.key() == "usb")
+        it.key() == "modules" ||
+        it.key() == "trainer" || it.key() == "usb" || it.key() == "touch" )
       continue;
 
     //qDebug() << "key:" << it.key() << "value:" << it.value();
@@ -1379,9 +1383,6 @@ bool Board::loadDefinition(const QString & path)
 
     else if (it.key() == "rotaryEncNav")
       m_hardware.rotaryEncNav = Json::valueBool(it, m_hardware.rotaryEncNav);
-
-    else if (it.key() == "modules")
-      loadModules(it);
 
     else if (it.key() == "voiceControl")
       m_hardware.voiceControl = Json::valueBool(it, m_hardware.voiceControl);
@@ -1574,10 +1575,10 @@ void Board::loadInputs(QJsonObject::const_iterator & oit)
         qWarning() << "Warning: inputs is not an array" << *oit;
 }
 
-void Board::loadModules(QJsonObject::const_iterator & oit)
+void Board::loadModules(QJsonValue obj)
 {
-  if (oit->isArray()) {
-    const QJsonArray &a = oit->toArray();
+  if (obj.isArray()) {
+    const QJsonArray &a = obj.toArray();
 
     for (QJsonArray::const_iterator it = a.constBegin(); it != a.constEnd(); ++it) {
       if (it->isObject()) {
@@ -1599,10 +1600,10 @@ void Board::loadModules(QJsonObject::const_iterator & oit)
             qWarning() << "Warning: No rule to process - key:" << it.key() << "value:" << it.value();
         }
       } else
-        qWarning() << "Warning: module is not an object" << *oit;
+        qWarning() << "Warning: module is not an object" << obj;
     }
   } else
-        qWarning() << "Warning: modules is not an array" << *oit;
+        qWarning() << "Warning: modules is not an array" << obj;
 }
 
 void Board::loadModules(QJsonObject::const_iterator & oit, Board::ModulesDefn & modules)

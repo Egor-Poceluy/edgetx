@@ -39,13 +39,20 @@ FirmwareFactories::~FirmwareFactories()
 {
 }
 
-Firmware * FirmwareFactories::getFirmware(const QString & id) const
+Firmware * FirmwareFactories::getFirmware(const QString & id, bool forceLoad) const
 {
   for (auto *registeredFactory : registeredFactories) {
-    if (registeredFactory->getFirmware()->getId() == id)
-      return registeredFactory->getFirmware();
+    auto firmware = registeredFactory->firmware();
+
+    if (firmware->getId() == id) {
+      if (!firmware->isLoaded() && forceLoad)
+        firmware->loadDefinition();
+
+      return firmware;
+    }
   }
 
+  qDebug() << "Error: firmware id:" << id << "not registered";
   return Firmware::getDefault();
 }
 
@@ -54,7 +61,7 @@ QList<Firmware *> FirmwareFactories::getRegisteredFirmwares() const
   QList<Firmware *> ret;
 
   for (auto *registeredFactory : registeredFactories) {
-    Firmware *firmware = registeredFactory->getFirmware();
+    Firmware *firmware = registeredFactory->firmware();
     if (firmware->isSupported())
       ret.append(firmware);
   }
@@ -65,7 +72,7 @@ QList<Firmware *> FirmwareFactories::getRegisteredFirmwares() const
 bool FirmwareFactories::isAvailable(const QString & id) const
 {
   for (auto *registeredFactory : registeredFactories) {
-    if (registeredFactory->getFirmware()->getId() == id)
+    if (registeredFactory->firmware()->getId() == id)
       return true;
   }
 
@@ -74,7 +81,7 @@ bool FirmwareFactories::isAvailable(const QString & id) const
 
 bool FirmwareFactories::loadDefinition(const QString & id)
 {
-  Firmware *firmware = getFirmware(id);
+  Firmware *firmware = getFirmware(id, false);
   return firmware ? firmware->loadDefinition() : false;
 }
 
@@ -95,7 +102,7 @@ void FirmwareFactories::registerAllFirmwares()
       // ignore intermediate definitions
       if (!Json::value(obj, "hidden", false, false).toBool()) {
         if (registerFirmware(QFileInfo(path).baseName()))
-          registered.append(getFirmware(QFileInfo(path).baseName())->getName());
+          registered.append(getFirmware(QFileInfo(path).baseName(), false)->getName());
       } else {
         //qInfo() << "Ignoring hidden file:" << path;
       }
@@ -104,7 +111,7 @@ void FirmwareFactories::registerAllFirmwares()
     delete doc;
   }
 
-  Firmware::setDefault(registeredFactories.first()->getFirmware());
+  Firmware::setDefault(registeredFactories.first()->firmware());
   qDebug() << "Registered firmwares:" << registered;
 }
 
@@ -113,7 +120,7 @@ QMap<QString, QString> FirmwareFactories::registeredFirmwares() const
   QMap<QString, QString> ret;
 
   for (auto *registeredFactory : registeredFactories) {
-    Firmware *firmware = registeredFactory->getFirmware();
+    Firmware *firmware = registeredFactory->firmware();
     if (firmware->isSupported())
       ret.insert(firmware->getId(), firmware->getName());
   }
@@ -123,9 +130,7 @@ QMap<QString, QString> FirmwareFactories::registeredFirmwares() const
 
 bool FirmwareFactories::registerFirmware(const QString & id)
 {
-  Firmware* firmware = getFirmware(id);
-
-  if (firmware) {
+  if (isAvailable(id)) {
     qWarning() << "Error - Firmware id:" << id << "already registered";
     return false;
   }

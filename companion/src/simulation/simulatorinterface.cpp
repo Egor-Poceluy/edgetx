@@ -56,10 +56,10 @@ int SimulatorLoader::registerSimulators(const QDir & dir)
 
     // Resolve board type from name
     QString boardId = Board::BOARD_UNKNOWN;
-    Firmware * fw = Firmware::getFirmware(QString("edgetx-") + simuName);
+    Firmware * fw = Firmware::getFirmware(simuName, false);
 
     if (fw)
-      boardId = fw->getBoard()->getId();
+      boardId = fw->getBoard(false)->getId();
 
     auto * factory = new WasmSimulatorFactory(wasmPath, simuName, boardId);
     registeredSimulators.insert(simuName, factory);

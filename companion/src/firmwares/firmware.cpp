@@ -117,6 +117,14 @@ QString Firmware::getOptionTooltip(const QString & opt)
   return registeredOptions.value(opt, tr("No tooltip available for this option"));
 }
 
+Board * Firmware::getBoard(bool forceLoad) const
+{
+  if (!m_board->isLoaded() && forceLoad)
+    m_board->loadDefinition();
+
+  return m_board;
+}
+
 int Firmware::getCapability(Capability value) const
 {
   const QStringList opts = g.currentProfile().fwOptions().split("-");
@@ -279,7 +287,7 @@ int Firmware::getCapability(Capability value) const
       return m_defn.timers.name;
 
     case Capability::TopBarZones:
-      return m_defn.maxTopBarZones;
+      return m_defn.topBarZones;
 
     case Capability::TrainerInputs:
       return m_defn.maxTrainerInputs;
@@ -308,9 +316,15 @@ QString Firmware::getCapabilityStr(Capability value) const
   }
 }
 
-Firmware * Firmware::getFirmware(const QString & id)
+Firmware * Firmware::getFirmware(const QString & id, bool forceLoad)
 {
-  return gFirmwareFactories->getFirmware(id);
+  //qDebug() << "id:" << id << "forceLoad:" << forceLoad;
+  auto firmware = gFirmwareFactories->getFirmware(id, forceLoad);
+
+  if (forceLoad)
+    firmware->getBoard(forceLoad);
+
+  return firmware;
 }
 
 const QString Firmware::getFullName() const
@@ -524,6 +538,9 @@ bool Firmware::loadDefinition(const QString & path)
     else if (it.key() == "timers")
       loadLimits(it, m_defn.timers, CPN_MAX_TIMERS, 8);
 
+    else if (it.key() == "topBarZones")
+      m_defn.topBarZones = Json::valueInt(it);
+
     else
       qWarning() << "Warning: No rule to process - path:" << path << "name:" << it.key() << "value:" << it.value();
   }
@@ -718,11 +735,11 @@ void Firmware::loadTeleCstmScrns(QJsonObject::const_iterator & oit)
         continue;
       else if (it.key() == "max")
         tele.limits.max = Json::valueInt(it, tele.limits.max, 3);
-      else if (it.key() == "maxBars")
+      else if (it.key() == "bars")
         tele.maxBars = Json::valueInt(it, tele.maxBars, 4);
-      else if (it.key() == "maxPerLine")
+      else if (it.key() == "perLine")
         tele.maxPerLine = Json::valueInt(it, tele.maxPerLine, 3);
-      else if (it.key() == "maxLines")
+      else if (it.key() == "lines")
         tele.maxLines = Json::valueInt(it, tele.maxLines, 4);
       else
         qWarning() << "Warning: No rule to process - name:" << it.key() << "value:" << it.value();
@@ -760,7 +777,7 @@ void Firmware::setCurrent(Firmware * firmware)
     m_current = firmware;
     // force loading board definition as it may only be a skeleton
     // if not loaded previously
-    m_current->getBoard()->loadDefinition();
+    m_current->getBoard(true);
   }
 
   if (!result)

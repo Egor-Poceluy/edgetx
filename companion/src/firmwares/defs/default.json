@@ -85,9 +85,9 @@
   "teleCstmScrns": {
     "comments": "only used for b&w radios",
     "max": 4,
-    "maxLines": 4,
-    "maxBars": 4,
-    "maxPerLine": 3
+    "lines": 4,
+    "bars": 4,
+    "perLine": 3
   },
   "timers": {
     "comments": "",
