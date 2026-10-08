@@ -232,7 +232,7 @@ class ModuleData {
     static int getTypeFromProtocol(unsigned int protocol);
     static int getSubTypeFromProtocol(unsigned int protocol);
     static QString typeToString(int type);
-    static AbstractStaticItemModel * internalModuleItemModel();
+    static AbstractStaticItemModel * internalModuleItemModel(Board * board);
     static bool isProtocolAvailable(int moduleidx, unsigned int  protocol, GeneralSettings & generalSettings);
     static AbstractStaticItemModel * protocolItemModel(GeneralSettings & settings);
     static AbstractStaticItemModel * telemetryBaudrateItemModel(unsigned int protocol, int moduleIdx = -1, Board * board = nullptr);

@@ -172,8 +172,18 @@ Board::Board(const QString & id) :
   rawSwitchTypesLookupTable(RawSwitch::getRawSwitchTypesLookupTable()),
   rawSourceSpecialTypesLookupTable(RawSource::getSpecialTypesLookupTable())
 {
+  QJsonDocument *dfltdoc = new QJsonDocument();
   QJsonDocument *bddoc = new QJsonDocument();
   QJsonDocument *hwdoc = new QJsonDocument();
+
+  if (Json::load(dfltdoc, QString("%1/%2.json").arg(BDDEFNSDIR).arg("default"))) {
+    QJsonObject dfltobj = dfltdoc->object();
+
+      // required for profile preferences firmware
+    if (Json::exists(dfltobj, "modules")) {
+      loadModules(dfltobj.value("modules"));
+    }
+  }
 
   if (Json::load(bddoc, QString("%1/%2.json").arg(BDDEFNSDIR).arg(id))) {
     QJsonObject bdobj = bddoc->object();
@@ -181,17 +191,21 @@ Board::Board(const QString & id) :
     if (!Json::value(bdobj, "hidden", false, false).toBool()) {
       m_name = Json::value(bdobj, "name", false, "unknown").toString();
       m_hwdefn = Json::value(bdobj, "hwdefn", false, id).toString();
-      // required for profile firmware change
-      if (Json::exists(bdobj, "modules"))
+      // required for profile preferences firmware
+      if (Json::exists(bdobj, "modules")) {
         loadModules(bdobj.value("modules"));
+      }
 
       if (Json::load(hwdoc, QString("%1/%2.json").arg(HWDEFNSDIR).arg(m_hwdefn))) {
-        if (hwdoc->object().value("identity").isObject()) {
-          QJsonObject identobj = hwdoc->object().value("identity").toObject();
+        QJsonObject hwobj = hwdoc->object();
+
+        if (hwobj.value("identity").isObject()) {
+          QJsonObject identobj = hwobj.value("identity").toObject();
           // required for firmware picker dialog
           m_identity.manufacturer = Json::value(identobj, "manufacturer", true, "unknown").toString().toStdString();
-        } else
+        } else {
           qDebug() << "Error - hwdefn:" << m_hwdefn << "does not have a valid identity block";
+        }
       }
     } else {
       qDebug() << "Error: attempt to register hidden board id:" << id;

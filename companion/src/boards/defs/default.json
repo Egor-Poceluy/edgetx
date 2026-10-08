@@ -2,7 +2,6 @@
   "comments": [
     "This file is always loaded first, then hwdefn, then variations overlaid in basedOn sequence",
     "hidden: true prevents the name being displayed in any ui lists",
-    "supported: false prevents the name being displayed in any ui list however available for data conversion",
     "Some entries are future proofing eg external modules and for parsing consistency"
   ],
   "hidden": true,

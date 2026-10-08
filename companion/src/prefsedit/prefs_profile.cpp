@@ -442,7 +442,7 @@ void PrefsProfilePanel::sectionNewFile()
   AutoLabel *lblModuleInternal = new AutoLabel(this, tr("Default Internal Module"));
   layNewFile->addWidget(lblModuleInternal, row, col++);
   cboModuleInternal = new AutoComboBox(this);
-  cboModuleInternal->setModel(ModuleData::internalModuleItemModel());
+  cboModuleInternal->setModel(ModuleData::internalModuleItemModel(board));
   cboModuleInternal->setValue(profile.defaultInternalModule());
   cboModuleInternal->setBindSave([this] {
     profile.defaultInternalModule(this->cboModuleInternal->currentData().toInt());
@@ -526,7 +526,7 @@ void PrefsProfilePanel::onRadioChanged(Firmware * firmware, bool deferUpdate)
     const bool profileBoard = (board == getCurrentBoard());
 
     QAbstractItemModel *oldModel = cboModuleInternal->model();
-    cboModuleInternal->setModel(ModuleData::internalModuleItemModel());
+    cboModuleInternal->setModel(ModuleData::internalModuleItemModel(board));
     delete oldModel;
     cboModuleInternal->setValue(profileBoard ? profile.defaultInternalModule()
                                              : board->getCapability(Capability::DefaultInternalModule));

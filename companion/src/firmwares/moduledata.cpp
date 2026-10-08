@@ -473,13 +473,12 @@ QString ModuleData::typeToString(int type)
   return CHECK_IN_ARRAY(strings, type);
 }
 
-AbstractStaticItemModel * ModuleData::internalModuleItemModel()
+AbstractStaticItemModel * ModuleData::internalModuleItemModel(Board * board)
 {
-  Board *bd = getCurrentBoard();
   AbstractStaticItemModel * mdl = new AbstractStaticItemModel();
   mdl->setName("moduledata.internalmodule");
 
-  auto modules = bd->supportedInternalModules();
+  auto modules = board->supportedInternalModules();
 
   for(auto mod : modules) {
     mdl->appendToItemList(typeToString(mod), mod);

@@ -77,7 +77,7 @@ HardwarePanel::HardwarePanel(QWidget * parent, GeneralSettings & generalSettings
   int baudmodelid = editorItemModels->registerItemModel(GeneralSettings::internalModuleBaudrateItemModel());
   int uartmodelid = editorItemModels->registerItemModel(GeneralSettings::uartSampleModeItemModel());
 
-  id = editorItemModels->registerItemModel(ModuleData::internalModuleItemModel());
+  id = editorItemModels->registerItemModel(ModuleData::internalModuleItemModel(firmware->getBoard()));
   tabFilteredModels->registerItemModel(new FilteredItemModel(editorItemModels->getItemModel(id)), FIM_INTERNALMODULES);
 
   editorItemModels->addItemModel(AbstractItemModel::IMID_FlexSwitches);
