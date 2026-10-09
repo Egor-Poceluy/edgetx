@@ -23,12 +23,15 @@
 
 #include "firmware.h"
 
+class FirmwareFactories;
+
 class FirmwareFactory
 {
-  public:
-    explicit FirmwareFactory(const QString & id);
+  protected:
+    friend FirmwareFactories;
 
-    virtual ~FirmwareFactory() {}
+    explicit FirmwareFactory(const QString & id);
+    virtual ~FirmwareFactory() = default;
 
     Firmware* firmware() const { return m_firmware; }
 
@@ -39,24 +42,33 @@ class FirmwareFactory
 class FirmwareFactories
 {
   public:
-    explicit FirmwareFactories();
-    virtual ~FirmwareFactories();
+    // Delete copy constructor and assignment operators to prevent duplicates
+    FirmwareFactories(const FirmwareFactories&) = delete;
+    FirmwareFactories& operator=(const FirmwareFactories&) = delete;
+    FirmwareFactories(FirmwareFactories&&) = delete;
+    FirmwareFactories& operator=(FirmwareFactories&&) = delete;
+
+    // Public static method acting as the single access point
+    static FirmwareFactories& getInstance() {
+        // Guaranteed to be destroyed and instantiated thread-safely on first use
+        static FirmwareFactories instance;
+        return instance;
+    }
 
     Firmware* getFirmware(const QString & id, bool forceLoad = true) const;
     bool isAvailable(const QString & id) const;
-
-    bool registerFirmware(const QString & id);
-    bool registerFactory(FirmwareFactory * factory);
-    void unregisterFactories();
-    void registerAllFirmwares();
 
     QMap<QString, QString> registeredFirmwares() const;
     QList<Firmware *> getRegisteredFirmwares() const;
 
   private:
+    // Keep constructor and destructor private to prevent external instantiation
+    FirmwareFactories();
+    ~FirmwareFactories();
+
     QList<FirmwareFactory *> registeredFactories;
 
     bool loadDefinition(const QString & id);
+    void registerAllFirmwares();
+    bool registerFirmware(const QString & id);
 };
-
-extern FirmwareFactories* gFirmwareFactories;

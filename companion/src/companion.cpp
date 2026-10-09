@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
   registerStorageFactories();
   // IMPORTANT load boards before firmware
   gBoardFactories = new BoardFactories();
-  gFirmwareFactories = new FirmwareFactories();
+  FirmwareFactories::getInstance();
   SimulatorLoader::registerSimulators();
 
   QTemporaryDir tempDir(QDir::tempPath() % "/etx-cpn-XXXXXX");
@@ -280,7 +280,6 @@ int main(int argc, char *argv[])
   delete mainWin;
 
   SimulatorLoader::unregisterSimulators();
-  gFirmwareFactories->unregisterFactories();
   gBoardFactories->unregisterBoardFactories();
   unregisterStorageFactories();
 

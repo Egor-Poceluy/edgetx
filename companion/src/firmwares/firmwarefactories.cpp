@@ -24,8 +24,6 @@
 
 #include <QFileInfo>
 
-FirmwareFactories* gFirmwareFactories = nullptr;
-
 FirmwareFactory::FirmwareFactory(const QString & id) :
   m_firmware(new Firmware(id))
 {}
@@ -37,6 +35,9 @@ FirmwareFactories::FirmwareFactories()
 
 FirmwareFactories::~FirmwareFactories()
 {
+  //qDebug() << "Unregister all firmware factories";
+  for (auto *registeredFactory : registeredFactories)
+    delete registeredFactory;
 }
 
 Firmware * FirmwareFactories::getFirmware(const QString & id, bool forceLoad) const
@@ -115,6 +116,19 @@ void FirmwareFactories::registerAllFirmwares()
   qDebug() << "Registered firmwares:" << registered;
 }
 
+bool FirmwareFactories::registerFirmware(const QString & id)
+{
+  if (isAvailable(id)) {
+    qWarning() << "Error - Firmware id:" << id << "already registered";
+    return false;
+  }
+
+  FirmwareFactory *factory = new FirmwareFactory(id);
+  registeredFactories.append(factory);
+  //qDebug() << "Registered firmware:" << factory->getFirmware()->getName();
+  return true;
+}
+
 QMap<QString, QString> FirmwareFactories::registeredFirmwares() const
 {
   QMap<QString, QString> ret;
@@ -126,34 +140,4 @@ QMap<QString, QString> FirmwareFactories::registeredFirmwares() const
   }
 
   return ret;
-}
-
-bool FirmwareFactories::registerFirmware(const QString & id)
-{
-  if (isAvailable(id)) {
-    qWarning() << "Error - Firmware id:" << id << "already registered";
-    return false;
-  }
-
-  FirmwareFactory *ff = new FirmwareFactory(id);
-
-  if (registerFactory(ff)) {
-    //qDebug() << "Registered firmware:" << ff->getFirmware()->getName();
-    return true;
-  }
-
-  delete ff;
-  return false;
-}
-
-bool FirmwareFactories::registerFactory(FirmwareFactory * factory)
-{
-  registeredFactories.append(factory);
-  return true;
-}
-
-void FirmwareFactories::unregisterFactories()
-{
-  for (auto *registeredFactory : registeredFactories)
-    delete registeredFactory;
 }

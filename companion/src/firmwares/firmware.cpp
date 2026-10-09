@@ -319,7 +319,7 @@ QString Firmware::getCapabilityStr(Capability value) const
 Firmware * Firmware::getFirmware(const QString & id, bool forceLoad)
 {
   //qDebug() << "id:" << id << "forceLoad:" << forceLoad;
-  auto firmware = gFirmwareFactories->getFirmware(id, forceLoad);
+  auto firmware = FirmwareFactories::getInstance().getFirmware(id, forceLoad);
 
   if (forceLoad)
     firmware->getBoard(forceLoad);
@@ -334,12 +334,12 @@ const QString Firmware::getFullName() const
 
 QList<Firmware *> Firmware::getRegisteredFirmwares()
 {
-  return gFirmwareFactories->getRegisteredFirmwares();
+  return FirmwareFactories::getInstance().getRegisteredFirmwares();
 }
 
 bool Firmware::isAvailable(const QString & id)
 {
-  return gFirmwareFactories->isAvailable(id);
+  return FirmwareFactories::getInstance().isAvailable(id);
 }
 
 bool Firmware::isOptionDuplicate(const OptionsGroup & grp, const QString & val)
@@ -765,7 +765,7 @@ bool Firmware::postLoad()
 
 void Firmware::setCurrent(const QString & id)
 {
-  setCurrent(gFirmwareFactories->getFirmware(id));
+  setCurrent(FirmwareFactories::getInstance().getFirmware(id));
 }
 
 void Firmware::setCurrent(Firmware * firmware)
