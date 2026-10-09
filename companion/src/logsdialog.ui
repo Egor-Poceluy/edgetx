@@ -276,12 +276,32 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="cancelLoad_PB">
+       <property name="text">
+        <string>Cancel</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QProgressBar" name="progressBar">
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item row="6" column="1" rowspan="8">
     <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="5,1">
      <item>
-      <widget class="QTableWidget" name="logTable">
+      <widget class="QTableView" name="logTable">
        <property name="sizePolicy">
         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
@@ -302,12 +322,6 @@
        </property>
        <property name="textElideMode">
         <enum>Qt::ElideNone</enum>
-       </property>
-       <property name="rowCount">
-        <number>0</number>
-       </property>
-       <property name="columnCount">
-        <number>0</number>
        </property>
        <attribute name="verticalHeaderVisible">
         <bool>false</bool>

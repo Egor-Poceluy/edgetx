@@ -157,23 +157,30 @@ set(common_MOC_HDRS
 qt_wrap_cpp(common_SRCS ${common_MOC_HDRS})
 
 # qrc used by Companion and Simulator
-add_custom_command(OUTPUT ${HWDEFS_QRC}
+add_custom_target(generate_hwdefs_qrc
   COMMAND ${PYTHON_EXECUTABLE} ${HWDEFS_CMD}
       -d ${HWDEFS_DIR}
       -t ${HWDEFS_TMPL}
       -p ${HWDEFS_PHDR}
       -o ${HWDEFS_QRC}
   DEPENDS ${HWDEFS_TMPL}
+  BYPRODUCTS ${HWDEFS_QRC}
+  COMMENT "Generating hwdefs.qrc"
 )
+set_source_files_properties(${HWDEFS_QRC} PROPERTIES GENERATED TRUE)
 
 set(common_RESOURCES
   companion.qrc
   ${TRANSLATIONS_QRC}
   ${HWDEFS_QRC}
 )
+
+set_source_files_properties(${HWDEFS_QRC} PROPERTIES GENERATED TRUE)
+
 qt_add_resources(common_RCC ${common_RESOURCES})
 
 add_library(common ${common_SRCS} ${common_RCC})
+add_dependencies(common generate_hwdefs_qrc)
 
 target_link_libraries(common
   datamodels
@@ -221,6 +228,8 @@ set(companion_NAMES
   helpers_html
   labels
   logsdialog
+  logsworker
+  logsparser
   mainwindow
   mdichild
   modelslist
@@ -237,6 +246,8 @@ foreach(name ${companion_NAMES})
   set(companion_HDRS
     ${companion_HDRS}
     ${name}.h
+    logsdata.h
+    logstablemodel.h
   )
 endforeach()
 
