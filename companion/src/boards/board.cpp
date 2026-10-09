@@ -222,7 +222,7 @@ Board::~Board()
 
 Board * Board::getBoard(const QString & id, bool forceLoad)
 {
-  return gBoardFactories->getBoard(id, forceLoad);
+  return BoardFactories::getInstance().getBoard(id, forceLoad);
 }
 
 int Board::getCapability(const Capability capability) const
@@ -473,7 +473,7 @@ QString Board::getAxisName(int index)
 
 bool Board::isAvailable(const QString & id)
 {
-  return gBoardFactories->isAvailable(id);
+  return BoardFactories::getInstance().isAvailable(id);
 }
 
 //  static

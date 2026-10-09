@@ -22,14 +22,12 @@
 #include "boardfactories.h"
 #include "helpers_json.h"
 
-BoardFactories* gBoardFactories = nullptr;
-
 BoardFactory::BoardFactory(const QString & id) :
   m_board(new Board(id))
 {
 }
 
-  BoardFactories::BoardFactories() :
+BoardFactories::BoardFactories() :
   m_default(nullptr)
 {
   registerAllBoards();
@@ -37,7 +35,9 @@ BoardFactory::BoardFactory(const QString & id) :
 
 BoardFactories::~BoardFactories()
 {
-  unregisterBoardFactories();
+  //qDebug() << "Unregister all board factories";
+  for (auto *registeredFactory : registeredBoardFactories)
+    delete registeredFactory;
 }
 
 Board * BoardFactories::getBoard(const QString & id, bool forceLoad) const
@@ -78,15 +78,11 @@ bool BoardFactories::registerBoard(const QString & id)
     return false;
   }
 
-  BoardFactory *bf = new BoardFactory(id);
+  BoardFactory *factory = new BoardFactory(id);
 
-  if (registerBoardFactory(bf)) {
-    //qDebug() << "Registered board:" << (id != Board::BOARD_UNKNOWN ? bf->board()->getName() : "UNKNOWN (default)");
-    return true;
-  }
-
-  delete bf;
-  return false;
+  registeredBoardFactories.append(factory);
+  //qDebug() << "Registered board:" << (id != Board::BOARD_UNKNOWN ? factory->board()->getName() : "UNKNOWN (default)");
+  return true;
 }
 
 void BoardFactories::registerAllBoards()
@@ -116,16 +112,4 @@ void BoardFactories::registerAllBoards()
   }
 
   qDebug() << "Registered boards:" << registered;
-}
-
-bool BoardFactories::registerBoardFactory(BoardFactory * factory)
-{
-  registeredBoardFactories.append(factory);
-  return true;
-}
-
-void BoardFactories::unregisterBoardFactories()
-{
-  for (auto *registeredFactory : registeredBoardFactories)
-    delete registeredFactory;
 }

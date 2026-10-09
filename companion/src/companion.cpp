@@ -233,10 +233,16 @@ int main(int argc, char *argv[])
   Q_INIT_RESOURCE(hwdefs);
   Q_INIT_RESOURCE(bddefs);
 
+  // TODO refactor into singleton
   registerStorageFactories();
+
   // IMPORTANT load boards before firmware
-  gBoardFactories = new BoardFactories();
+  // instantiate singleton
+  BoardFactories::getInstance();
+  // instantiate singleton
   FirmwareFactories::getInstance();
+
+  // TODO refactor into singleton
   SimulatorLoader::registerSimulators();
 
   QTemporaryDir tempDir(QDir::tempPath() % "/etx-cpn-XXXXXX");
@@ -280,7 +286,6 @@ int main(int argc, char *argv[])
   delete mainWin;
 
   SimulatorLoader::unregisterSimulators();
-  gBoardFactories->unregisterBoardFactories();
   unregisterStorageFactories();
 
 #if defined(USE_SDL)

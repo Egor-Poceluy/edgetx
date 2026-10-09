@@ -28,6 +28,7 @@ class FirmwareFactories;
 class FirmwareFactory
 {
   protected:
+    // only allow FirmwareFactories to instantiate
     friend FirmwareFactories;
 
     explicit FirmwareFactory(const QString & id);

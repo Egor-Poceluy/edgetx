@@ -23,11 +23,15 @@
 
 #include "board.h"
 
+class BoardFactories;
+
 class BoardFactory
 {
-  public:
-    explicit BoardFactory(const QString & id);
+  protected:
+    // only allow BoardFactories to instantiate
+    friend BoardFactories;
 
+    explicit BoardFactory(const QString & id);
     virtual ~BoardFactory() {}
 
     Board * board() const { return m_board; }
@@ -39,21 +43,30 @@ class BoardFactory
 class BoardFactories
 {
   public:
-    explicit BoardFactories();
-    virtual ~BoardFactories();
+    // Delete copy constructor and assignment operators to prevent duplicates
+    BoardFactories(const BoardFactories&) = delete;
+    BoardFactories& operator=(const BoardFactories&) = delete;
+    BoardFactories(BoardFactories&&) = delete;
+    BoardFactories& operator=(BoardFactories&&) = delete;
+
+    // Public static method acting as the single access point
+    static BoardFactories& getInstance() {
+        // Guaranteed to be destroyed and instantiated thread-safely on first use
+        static BoardFactories instance;
+        return instance;
+    }
 
     Board * getBoard(const QString & id, bool forceLoad = true) const;
     bool isAvailable(const QString & id) const;
 
-    void registerAllBoards();
-    bool registerBoard(const QString & id);
-    bool registerBoardFactory(BoardFactory * factory);
-    void unregisterBoardFactories();
-
   private:
-    QList<BoardFactory *> registeredBoardFactories;
+    explicit BoardFactories();
+    virtual ~BoardFactories();
 
     Board *m_default;
-};
 
-extern BoardFactories* gBoardFactories;
+    QList<BoardFactory *> registeredBoardFactories;
+
+    void registerAllBoards();
+    bool registerBoard(const QString & id);
+};
