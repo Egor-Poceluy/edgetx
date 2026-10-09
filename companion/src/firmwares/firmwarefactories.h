@@ -69,7 +69,6 @@ class FirmwareFactories
 
     QList<FirmwareFactory *> registeredFactories;
 
-    bool loadDefinition(const QString & id);
     void registerAllFirmwares();
     bool registerFirmware(const QString & id);
 };

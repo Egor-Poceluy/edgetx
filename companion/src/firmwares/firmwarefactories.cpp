@@ -80,12 +80,6 @@ bool FirmwareFactories::isAvailable(const QString & id) const
   return false;
 }
 
-bool FirmwareFactories::loadDefinition(const QString & id)
-{
-  Firmware *firmware = getFirmware(id, false);
-  return firmware ? firmware->loadDefinition() : false;
-}
-
 void FirmwareFactories::registerAllFirmwares()
 {
   QStringList registered;
