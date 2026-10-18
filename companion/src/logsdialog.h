@@ -1,6 +1,22 @@
 /*
  * Copyright (C) EdgeTX
- * License GPLv2
+ *
+ * Based on code named
+ *   opentx - https://github.com/opentx/opentx
+ *   th9x - http://code.google.com/p/th9x
+ *   er9x - http://code.google.com/p/er9x
+ *   gruvin9x - http://code.google.com/p/gruvin9x
+ *
+ * License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #pragma once
@@ -8,12 +24,12 @@
 #include <QtCore>
 #include <QDialog>
 #include "qcustomplot.h"
-#include "logsdata.h"
+#include "logs_data.h"
 
 namespace Ui { class LogsDialog; }
 
 class LogsWorker;
-class LogTableModel;
+class LogsTableModel;
 class QThread;
 
 class LogsDialog : public QDialog
@@ -25,8 +41,8 @@ public:
   ~LogsDialog();
 
 signals:
-  void requestParse(const QString &fileName);
-  void requestPlots(const PlotRequest &req);
+  void request_parse(const QString& filename);
+  void request_plots(const PlotRequest& request);
 
 private slots:
   void titleDoubleClicked(QMouseEvent *evt);
@@ -38,16 +54,16 @@ private slots:
   void removeAllGraphs();
   void plotLogs();
   void fileOpen();
-  void cancelLoad();
   void saveSession();
   void sessionsCurrentIndexChanged(int index);
   void mapsButtonClicked();
   void yAxisChangeRanges(QCPRange range);
-  void onParsed(const LogData &data);
-  void onParseError(const QString &message);
-  void onPlotsReady(const plotsCollection &plots);
-  void onPlotsError(const QString &message);
-  void onProgress(int percent);
+  void cancel_load();
+  void on_parsed(const LogsData& data);
+  void on_parse_error(const QString& message);
+  void on_plots_ready(const plotsCollection& plots);
+  void on_plots_error(const QString& message);
+  void on_progress(int percent);
 
 private:
   Ui::LogsDialog *ui;
@@ -55,8 +71,8 @@ private:
   QCPLegend *rightLegend;
   bool plotLock = false;
 
-  LogData _data;
-  LogTableModel* _model = nullptr;
+  LogsData _data;
+  LogsTableModel* _model = nullptr;
 
   QVarLengthArray<Qt::GlobalColor> colors;
   QPen pen;
@@ -69,14 +85,14 @@ private:
   QCPItemTracer * cursorB = nullptr;
   QCPItemStraightLine * cursorLine = nullptr;
 
-  LogsWorker * worker = nullptr;
-  QThread * thread = nullptr;
+  LogsWorker* worker = nullptr;
+  QThread* thread = nullptr;
 
-  QList<QStringList> filterGePoints(const LogData &input);
+  QList<QStringList> filterGePoints(const LogsData& input);
   void exportToGoogleEarth();
   QDateTime getRecordTimeStamp(int index) const;
   QString generateDuration(const QDateTime & start, const QDateTime & end) const;
-  void buildSessionsCombo();
+  void build_sessions_combo();
 
   void addMaxAltitudeMarker(const coords_t & c, QCPGraph * graph);
   void countNumberOfThrows(const coords_t & c, QCPGraph * graph);

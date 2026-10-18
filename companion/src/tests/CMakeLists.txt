@@ -19,7 +19,11 @@ if(Qt6Widgets_FOUND)
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 ${WARNING_FLAGS}")
 
-  add_executable(gtests-companion EXCLUDE_FROM_ALL ${TEST_SRC_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/location.h.in)
+  add_executable(gtests-companion EXCLUDE_FROM_ALL
+    ${TEST_SRC_FILES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/location.h.in
+    ${COMPANION_SRC_DIRECTORY}/logs_parser.cpp
+  )
   add_dependencies(gtests-companion gtests-companion-lib)
   target_link_libraries(gtests-companion gtests-companion-lib simulation firmwares storage common)
   message(STATUS "Added optional gtests-companion target")

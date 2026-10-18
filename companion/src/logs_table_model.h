@@ -21,32 +21,24 @@
 
 #pragma once
 
-#include <QObject>
-#include <QAtomicInt>
-#include "logsdata.h"
+#include <QAbstractTableModel>
+#include "logs_data.h"
 
-class LogsWorker : public QObject
+class LogsTableModel : public QAbstractTableModel
 {
   Q_OBJECT
 
 public:
-  explicit LogsWorker(QObject* parent = 0);
+  explicit LogsTableModel(QObject* parent = nullptr);
 
-public slots:
-  void parseFile(const QString& fileName);
-  void computePlots(const PlotRequest& request);
-  void cancel();
-
-signals:
-  void parsed(const LogData& data);
-  void parseError(const QString& message);
-  void plotsReady(const plotsCollection& plots);
-  void plotsError(const QString& message);
-  void progress(int percent);
+  void set_log(const LogsData& data);
+  void clear();
+  const LogsData& log() const;
+  int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+  int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+  QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+  QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
 private:
-  LogData _data;
-  QAtomicInt _generation;
-
-  bool isCancelled(int generation) const;
+  LogsData _data;
 };

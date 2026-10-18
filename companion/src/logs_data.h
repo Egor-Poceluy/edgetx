@@ -52,46 +52,46 @@ struct minMax_t { double min, max; };
 struct plotsCollection {
   QVarLengthArray<coords_t> coords;
   double min_x, max_x;
-  bool tooManyRanges;
-  minMax_t yAxesRanges[AXES_LIMIT];
-  double yAxesRatios[AXES_LIMIT];
-  double commonMinY, commonMaxY;
+  bool too_many_ranges;
+  minMax_t y_axes_ranges[AXES_LIMIT];
+  double y_axes_ratios[AXES_LIMIT];
+  double common_min_y, common_max_y;
 };
 
 struct LogField {
   QString name;
-  bool isNumeric;
-  QVector<double> num;
-  QVector<QString> str;
+  bool is_numeric;
+  QVector<double> numbers;
+  QVector<QString> strings;
 
-  QVariant valueAt(int r) const {
-    if (isNumeric) return num.at(r);
-    return str.at(r);
+  QVariant value_at(int index) const {
+    if (is_numeric) return numbers.at(index);
+    return strings.at(index);
   }
 };
 
-struct LogData {
-  QString logFilename;
-  QStringList columnNames;
+struct LogsData {
+  QString filename;
+  QStringList column_names;
   QVector<LogField> fields;
   QVector<qint64> timestamps;
-  QList<int> sessionBreaks;
-  int errors;
-  int lines;
+  QList<int> session_breaks;
+  int errors = 0;
+  int lines = 0;
 
-  int rowCount() const { return timestamps.size(); }
-  int colCount() const { return fields.size(); }
-  bool isEmpty() const { return timestamps.isEmpty(); }
+  int row_count() const { return timestamps.size(); }
+  int col_count() const { return fields.size(); }
+  bool is_empty() const { return timestamps.isEmpty(); }
 };
 
 struct PlotRequest {
-  QList<int> selectedColumns;
-  QList<int> selectedRows;
-  QStringList fieldNames;
-  bool useCommonAxes;
+  QList<int> selected_columns;
+  QList<int> selected_rows;
+  QStringList field_names;
+  bool use_common_axes = false;
 };
 
 Q_DECLARE_METATYPE(coords_t)
 Q_DECLARE_METATYPE(plotsCollection)
-Q_DECLARE_METATYPE(LogData)
+Q_DECLARE_METATYPE(LogsData)
 Q_DECLARE_METATYPE(PlotRequest)

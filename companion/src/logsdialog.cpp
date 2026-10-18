@@ -1,13 +1,29 @@
 /*
  * Copyright (C) EdgeTX
- * License GPLv2
+ *
+ * Based on code named
+ *   opentx - https://github.com/opentx/opentx
+ *   th9x - http://code.google.com/p/th9x
+ *   er9x - http://code.google.com/p/er9x
+ *   gruvin9x - http://code.google.com/p/gruvin9x
+ *
+ * License GPLv2: http://www.gnu.org/licenses/gpl-2.0.html
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <QThread>
 #include <math.h>
 #include "logsdialog.h"
-#include "logsworker.h"
-#include "logstablemodel.h"
+#include "logs_worker.h"
+#include "logs_table_model.h"
 #include "appdata.h"
 #include "ui_logsdialog.h"
 #include "helpers.h"
@@ -21,16 +37,25 @@ LogsDialog::LogsDialog(QWidget *parent) :
   QDialog(parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
   ui(new Ui::LogsDialog)
 {
-  qRegisterMetaType<LogData>("LogData");
+  qRegisterMetaType<LogsData>("LogsData");
   qRegisterMetaType<PlotRequest>("PlotRequest");
   qRegisterMetaType<plotsCollection>("plotsCollection");
 
   ui->setupUi(this);
   setWindowIcon(CompanionIcon("logs.png"));
 
-  colors << Qt::green << Qt::red << Qt::magenta << Qt::cyan
-         << Qt::blue  << Qt::yellow << Qt::darkGreen << Qt::darkRed
-         << Qt::darkMagenta << Qt::darkCyan << Qt::darkBlue << Qt::darkYellow;
+  colors.append(Qt::green);
+  colors.append(Qt::red);
+  colors.append(Qt::magenta);
+  colors.append(Qt::cyan);
+  colors.append(Qt::blue);
+  colors.append(Qt::yellow);
+  colors.append(Qt::darkGreen);
+  colors.append(Qt::darkRed);
+  colors.append(Qt::darkMagenta);
+  colors.append(Qt::darkCyan);
+  colors.append(Qt::darkBlue);
+  colors.append(Qt::darkYellow);
   pen.setWidthF(1.0);
 
   QCPTextElement *title = new QCPTextElement(ui->customPlot);
@@ -83,13 +108,15 @@ LogsDialog::LogsDialog(QWidget *parent) :
 
   ui->SaveSession_PB->setEnabled(false);
 
-  _model = new LogTableModel(this);
+  _model = new LogsTableModel(this);
   ui->logTable->setModel(_model);
   ui->logTable->setSelectionBehavior(QAbstractItemView::SelectRows);
 
   ui->progressBar->setVisible(false);
   ui->cancelLoad_PB->setVisible(false);
 
+  connect(ui->cancelLoad_PB, &QPushButton::clicked, this, &LogsDialog::cancel_load);
+  connect(ui->logTable->selectionModel(), &QItemSelectionModel::selectionChanged, this, &LogsDialog::plotLogs);
   connect(ui->customPlot, &QCustomPlot::selectionChangedByUser, this, &LogsDialog::selectionChanged);
   connect(ui->customPlot, &QCustomPlot::mousePress, this, &LogsDialog::mousePress);
   connect(ui->customPlot, &QCustomPlot::mouseWheel, this, &LogsDialog::mouseWheel);
@@ -100,8 +127,6 @@ LogsDialog::LogsDialog(QWidget *parent) :
   connect(ui->customPlot, &QCustomPlot::axisDoubleClick, this, &LogsDialog::axisLabelDoubleClick);
   connect(ui->customPlot, &QCustomPlot::legendDoubleClick, this, &LogsDialog::legendDoubleClick);
   connect(ui->FieldsTW, &QTableWidget::itemSelectionChanged, this, &LogsDialog::plotLogs);
-  connect(ui->logTable->selectionModel(), &QItemSelectionModel::selectionChanged,
-          this, &LogsDialog::plotLogs);
   connect(ui->Reset_PB, &QPushButton::clicked, this, [this]() {
     ui->ZoomX_ChkB->setChecked(false);
     ui->ZoomY_ChkB->setChecked(false);
@@ -111,7 +136,6 @@ LogsDialog::LogsDialog(QWidget *parent) :
   connect(ui->CommonAxes_ChkB, &QPushButton::clicked, this, &LogsDialog::plotLogs);
   connect(ui->SaveSession_PB, &QPushButton::clicked, this, &LogsDialog::saveSession);
   connect(ui->fileOpen_PB, &QPushButton::clicked, this, &LogsDialog::fileOpen);
-  connect(ui->cancelLoad_PB, &QPushButton::clicked, this, &LogsDialog::cancelLoad);
   connect(ui->mapsButton, &QPushButton::clicked, this, &LogsDialog::mapsButtonClicked);
   connect(ui->sessions_CB,
           static_cast<void(QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -121,14 +145,14 @@ LogsDialog::LogsDialog(QWidget *parent) :
   worker = new LogsWorker();
   worker->moveToThread(thread);
 
-  connect(this, &LogsDialog::requestParse, worker, &LogsWorker::parseFile);
-  connect(this, &LogsDialog::requestPlots, worker, &LogsWorker::computePlots);
+  connect(this, &LogsDialog::request_parse, worker, &LogsWorker::parse_file);
+  connect(this, &LogsDialog::request_plots, worker, &LogsWorker::compute_plots);
 
-  connect(worker, &LogsWorker::parsed,     this, &LogsDialog::onParsed);
-  connect(worker, &LogsWorker::parseError, this, &LogsDialog::onParseError);
-  connect(worker, &LogsWorker::plotsReady, this, &LogsDialog::onPlotsReady);
-  connect(worker, &LogsWorker::plotsError, this, &LogsDialog::onPlotsError);
-  connect(worker, &LogsWorker::progress,   this, &LogsDialog::onProgress);
+  connect(worker, &LogsWorker::parse_ready, this, &LogsDialog::on_parsed);
+  connect(worker, &LogsWorker::parse_error, this, &LogsDialog::on_parse_error);
+  connect(worker, &LogsWorker::plots_ready, this, &LogsDialog::on_plots_ready);
+  connect(worker, &LogsWorker::plots_error, this, &LogsDialog::on_plots_error);
+  connect(worker, &LogsWorker::progress,    this, &LogsDialog::on_progress);
 
   connect(thread, &QThread::finished, worker, &QObject::deleteLater);
   thread->start();
@@ -146,12 +170,11 @@ LogsDialog::~LogsDialog()
 
 void LogsDialog::fileOpen()
 {
-  QString fileName = QFileDialog::getOpenFileName(this, tr("Select your log file"),
-                                                  g.logDir());
-  if (fileName.isEmpty()) return;
+  QString filename = QFileDialog::getOpenFileName(this, tr("Select your log file"), g.logDir());
+  if (filename.isEmpty()) return;
 
-  g.logDir(fileName);
-  ui->FileName_LE->setText(fileName);
+  g.logDir(filename);
+  ui->FileName_LE->setText(filename);
 
   if (worker) worker->cancel();
 
@@ -160,20 +183,20 @@ void LogsDialog::fileOpen()
   ui->cancelLoad_PB->setVisible(true);
   ui->fileOpen_PB->setEnabled(false);
 
-  emit requestParse(fileName);
+  emit request_parse(filename);
 }
 
-void LogsDialog::cancelLoad()
+void LogsDialog::cancel_load()
 {
   if (worker) worker->cancel();
 }
 
-void LogsDialog::onProgress(int percent)
+void LogsDialog::on_progress(int percent)
 {
   ui->progressBar->setValue(percent);
 }
 
-void LogsDialog::onParseError(const QString &message)
+void LogsDialog::on_parse_error(const QString& message)
 {
   ui->progressBar->setVisible(false);
   ui->cancelLoad_PB->setVisible(false);
@@ -182,7 +205,7 @@ void LogsDialog::onParseError(const QString &message)
     QMessageBox::warning(this, CPN_STR_APP_NAME, message);
 }
 
-void LogsDialog::onParsed(const LogData &data)
+void LogsDialog::on_parsed(const LogsData &data)
 {
   ui->progressBar->setVisible(false);
   ui->cancelLoad_PB->setVisible(false);
@@ -197,7 +220,7 @@ void LogsDialog::onParsed(const LogData &data)
   _data = data;
   plotLock = true;
 
-  _model->setLog(data);
+  _model->set_log(data);
   ui->logTable->horizontalHeader()->setResizeContentsPrecision(200);
   ui->logTable->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
   ui->logTable->horizontalHeader()->setStretchLastSection(false);
@@ -205,16 +228,16 @@ void LogsDialog::onParsed(const LogData &data)
   ui->FieldsTW->clear();
   ui->FieldsTW->setShowGrid(false);
   ui->FieldsTW->setContentsMargins(0, 0, 0, 0);
-  ui->FieldsTW->setRowCount(qMax(0, data.colCount() - 2));
+  ui->FieldsTW->setRowCount(qMax(0, data.col_count() - 2));
   ui->FieldsTW->setColumnCount(1);
   ui->FieldsTW->setHorizontalHeaderLabels(QStringList(tr("Available fields")));
-  for (int i = 2; i < data.colCount(); ++i) {
-    QTableWidgetItem *item = new QTableWidgetItem(data.fields.at(i).name);
+  for (int i = 2; i < data.col_count(); ++i) {
+    auto* item = new QTableWidgetItem(data.fields.at(i).name);
     ui->FieldsTW->setItem(i - 2, 0, item);
   }
   ui->FieldsTW->resizeRowsToContents();
 
-  buildSessionsCombo();
+  build_sessions_combo();
 
   plotLock = false;
 }
@@ -228,48 +251,45 @@ void LogsDialog::plotLogs()
     return;
   }
 
-  PlotRequest req;
-  req.useCommonAxes = ui->CommonAxes_ChkB->isChecked();
+  PlotRequest request;
+  request.use_common_axes = ui->CommonAxes_ChkB->isChecked();
 
-  for (QTableWidgetItem *plot : ui->FieldsTW->selectedItems()) {
-    req.selectedColumns.append(plot->row() + 2);
-    req.fieldNames.append(plot->text());
+  for (QTableWidgetItem* plot : ui->FieldsTW->selectedItems()) {
+    request.selected_columns.append(plot->row() + 2);
+    request.field_names.append(plot->text());
   }
 
-  for (const QModelIndex &idx : ui->logTable->selectionModel()->selectedRows())
-    req.selectedRows.append(idx.row());
+  for (const QModelIndex& index : ui->logTable->selectionModel()->selectedRows())
+    request.selected_rows.append(index.row());
 
-  emit requestPlots(req);
+  emit request_plots(request);
 }
 
-void LogsDialog::onPlotsError(const QString &message)
+void LogsDialog::on_plots_error(const QString& message)
 {
   QMessageBox::warning(this, CPN_STR_APP_NAME, message);
 }
 
-void LogsDialog::onPlotsReady(const plotsCollection &plots)
+void LogsDialog::on_plots_ready(const plotsCollection& plots)
 {
   for (int i = 0; i < AXES_LIMIT; ++i) {
-    yAxesRanges[i] = plots.yAxesRanges[i];
-    yAxesRatios[i] = plots.yAxesRatios[i];
+    yAxesRanges[i] = plots.y_axes_ranges[i];
+    yAxesRatios[i] = plots.y_axes_ratios[i];
   }
 
   removeAllGraphs();
 
-  if (plots.coords.isEmpty()) {
-    ui->customPlot->replot();
-    return;
-  }
+  if (plots.coords.isEmpty()) { ui->customPlot->replot(); return; }
 
   axisRect->axis(QCPAxis::atBottom)->setRange(plots.min_x, plots.max_x);
 
   if (ui->CommonAxes_ChkB->isChecked())
-    axisRect->axis(QCPAxis::atLeft)->setRange(plots.commonMinY, plots.commonMaxY);
+    axisRect->axis(QCPAxis::atLeft)->setRange(plots.common_min_y, plots.common_max_y);
   else
     axisRect->axis(QCPAxis::atLeft)->setRange(yAxesRanges[firstLeft].min,
                                               yAxesRanges[firstLeft].max);
 
-  axisRect->axis(QCPAxis::atLeft)->setTickLabels(!plots.tooManyRanges);
+  axisRect->axis(QCPAxis::atLeft)->setTickLabels(!plots.too_many_ranges);
 
   if (yAxesRanges[firstRight].max != INVALID_MAX) {
     axisRect->axis(QCPAxis::atRight)->setRange(yAxesRanges[firstRight].min,
@@ -354,39 +374,46 @@ QDateTime LogsDialog::getRecordTimeStamp(int index) const
   return QDateTime::fromMSecsSinceEpoch(_data.timestamps.at(index));
 }
 
-QString LogsDialog::generateDuration(const QDateTime &start,
-                                     const QDateTime &end) const
+QString LogsDialog::generateDuration(const QDateTime &start, const QDateTime &end) const
 {
   int secs = start.secsTo(end);
-  QString s;
-  if (secs >= 3600) { s = QString("%1:").arg(secs / 3600); secs %= 3600; }
-  s += QString("%1:%2").arg(secs / 60, 2, 10, QChar('0'))
-                       .arg(secs % 60, 2, 10, QChar('0'));
-  return s;
+  QString str;
+
+  if (secs >= 3600) {
+    str = QString("%1:").arg(secs / 3600);
+    secs %= 3600;
+  }
+
+  str += QString("%1:%2").arg(secs / 60, 2, 10, QChar('0'))
+                         .arg(secs % 60, 2, 10, QChar('0'));
+  return str;
 }
 
-void LogsDialog::buildSessionsCombo()
+void LogsDialog::build_sessions_combo()
 {
   ui->sessions_CB->blockSignals(true);
   ui->sessions_CB->clear();
   ui->SaveSession_PB->setEnabled(false);
 
-  if (_data.isEmpty()) { ui->sessions_CB->blockSignals(false); return; }
+  if (_data.is_empty()) {
+    ui->sessions_CB->blockSignals(false);
+    return;
+  }
 
-  const QList<int> &breaks = _data.sessionBreaks;
-  const int n = _data.rowCount();
-  const int numSessions = breaks.size();
+  const QList<int>& breaks = _data.session_breaks;
+  int n = _data.row_count();
+  int num_sessions = breaks.size();
 
-  QString label = QString("%1 ").arg(numSessions);
-  label += tr(numSessions > 1 ? "sessions" : "session");
+  QString label = QString("%1 ").arg(num_sessions);
+  label += tr(num_sessions > 1 ? "sessions" : "session");
   label += " <" + tr("time span ") +
            generateDuration(getRecordTimeStamp(0), getRecordTimeStamp(n - 1)) + ">";
   ui->sessions_CB->addItem(label);
 
-  if (numSessions > 1) {
-    for (int k = 1; k <= numSessions; ++k) {
-      const int start = (k == 1) ? 0 : breaks.at(k - 2) + 1;
-      const int end   = breaks.at(k - 1);
+  if (num_sessions > 1) {
+    for (int k = 1; k <= num_sessions; ++k) {
+      int start = (k == 1) ? 0 : breaks.at(k - 2) + 1;
+      int end = breaks.at(k - 1);
       QDateTime s = getRecordTimeStamp(start);
       QDateTime e = getRecordTimeStamp(end);
       QString lbl = s.toString("HH:mm:ss") + " <" + tr("duration ") + generateDuration(s, e) + ">";
@@ -404,16 +431,17 @@ void LogsDialog::sessionsCurrentIndexChanged(int index)
   ui->logTable->clearSelection();
 
   if (index > 0) {
-    const int start = ui->sessions_CB->itemData(index, Qt::UserRole).toInt();
-    const int end   = _data.sessionBreaks.at(index - 1);
+    int start = ui->sessions_CB->itemData(index, Qt::UserRole).toInt();
+    int end = _data.session_breaks.at(index - 1);
 
-    if (start >= 0 && end >= start && end < _data.rowCount()) {
+    if (start >= 0 && end >= start && end < _data.row_count()) {
       QItemSelection sel(_model->index(start, 0),
-                         _model->index(end, _data.colCount() - 1));
+                         _model->index(end, _data.col_count() - 1));
       ui->logTable->selectionModel()->select(sel, QItemSelectionModel::Select);
     }
     ui->SaveSession_PB->setEnabled(true);
-  } else {
+  }
+  else {
     ui->SaveSession_PB->setEnabled(false);
   }
 
@@ -426,89 +454,92 @@ void LogsDialog::saveSession()
   int index = ui->sessions_CB->currentIndex();
   if (index <= 0) return;
 
-  const int n = _data.rowCount();
-  QList<QStringList> sessionRows;
-  sessionRows.push_back(_data.columnNames);
+  const QList<int> &breaks = _data.session_breaks;
+  if (index > breaks.size()) return;
 
-  int currentSession = 0;
-  QDateTime last;
-  for (int i = 1; i < n; ++i) {
-    QDateTime cur = getRecordTimeStamp(i);
-    if (last.isValid() && last.secsTo(cur) > 60) currentSession++;
-    last = cur;
+  int start = (index == 1) ? 0 : breaks.at(index - 2) + 1;
+  int end = breaks.at(index - 1);
 
-    if (currentSession == index) {
-      QStringList row;
-      row.reserve(_data.colCount());
-      for (int c = 0; c < _data.colCount(); ++c) {
-        const LogField& f = _data.fields.at(c);
-        if (f.isNumeric) row << QString::number(f.num.at(i));
-        else             row << f.str.at(i);
+  QList<QStringList> session_rows;
+  session_rows.push_back(_data.column_names);
+
+  for (int i = start; i <= end; ++i) {
+    QStringList row;
+    row.reserve(_data.col_count());
+    for (int c = 0; c < _data.col_count(); ++c) {
+      const LogField& f = _data.fields.at(c);
+      if (f.is_numeric) {
+        row << QString::number(f.numbers.at(i));
       }
-      sessionRows.push_back(row);
-    } else if (currentSession > index) {
-      break;
+      else {
+        row << f.strings.at(i);
+      }
     }
+    session_rows.push_back(row);
   }
 
-  QString newFilename = _data.logFilename;
-  newFilename.append(QString("-Session%1.csv").arg(index));
-  QString filename = QFileDialog::getSaveFileName(this, "Save log", newFilename,
-                                                  "CSV files (.csv);");
+  QString new_filename = _data.filename;
+  new_filename.append(QString("-Session%1.csv").arg(index));
+  QString filename = QFileDialog::getSaveFileName(this, "Save log", new_filename, "CSV files (.csv);");
   if (filename.isEmpty()) return;
 
   QFile data(filename);
   if (data.open(QFile::WriteOnly | QFile::Truncate)) {
     QTextStream out(&data);
-    for (const QStringList& row : sessionRows)
+    for (const QStringList& row : session_rows)
       out << row.join(",") << '\n';
   }
 }
 
-QList<QStringList> LogsDialog::filterGePoints(const LogData &input)
+QList<QStringList> LogsDialog::filterGePoints(const LogsData &input)
 {
   QList<QStringList> result;
-  if (input.isEmpty()) return result;
+  if (input.is_empty()) return result;
 
   int gpscol = -1;
-  for (int i = 0; i < input.colCount(); ++i) {
+  for (int i = 0; i < input.col_count(); ++i) {
     if (input.fields.at(i).name == "GPS") gpscol = i;
   }
   if (gpscol < 0) {
     QMessageBox::critical(this, tr("Error: no GPS data found"),
       tr("The column containing GPS coordinates must be named \"GPS\".\n\n\
-The columns for altitude \"GAlt\" and for speed \"GSpd\" are optional"));
+          The columns for altitude \"GAlt\" and for speed \"GSpd\" are optional"));
     return result;
   }
 
   QStringList header;
   header << "Date" << "Time";
-  for (int i = 2; i < input.colCount(); ++i) header << input.fields.at(i).name;
+  for (int i = 2; i < input.col_count(); ++i) header << input.fields.at(i).name;
   result.append(header);
 
   QModelIndexList selectedRows = ui->logTable->selectionModel()->selectedRows();
   QSet<int> selectedSet;
-  for (const QModelIndex &idx : selectedRows) selectedSet.insert(idx.row());
-  const bool rangeSelected = !selectedSet.isEmpty();
+  for (const QModelIndex &idx : selectedRows)
+    selectedSet.insert(idx.row());
+  bool rangeSelected = !selectedSet.isEmpty();
 
   GpsGlitchFilter glitchFilter;
   GpsLatLonFilter latLonFilter;
 
-  for (int r = 0; r < input.rowCount(); ++r) {
+  for (int r = 0; r < input.row_count(); ++r) {
     if (rangeSelected && !selectedSet.contains(r)) continue;
 
-    const QString& gpsStr = input.fields.at(gpscol).str.at(r);
+    const QString& gpsStr = input.fields.at(gpscol).strings.at(r);
     GpsCoord coord = extractGpsCoordinates(gpsStr);
     if (glitchFilter.isGlitch(coord)) continue;
     if (!latLonFilter.isValid(coord)) continue;
 
     QStringList row;
-    row << input.fields.at(0).str.at(r);
-    row << input.fields.at(1).str.at(r);
-    for (int c = 2; c < input.colCount(); ++c) {
+    row << input.fields.at(0).strings.at(r);
+    row << input.fields.at(1).strings.at(r);
+    for (int c = 2; c < input.col_count(); ++c) {
       const LogField& f = input.fields.at(c);
-      if (f.isNumeric) row << QString::number(f.num.at(r));
-      else             row << f.str.at(r);
+      if (f.is_numeric) {
+        row << QString::number(f.numbers.at(r));
+      }
+      else {
+        row << f.strings.at(r);
+      }
     }
     result.append(row);
   }
@@ -562,7 +593,7 @@ void LogsDialog::exportToGoogleEarth()
 
   QTextStream outputStream(&geFile);
   outputStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<kml xmlns=\"http://www.opengis.net/kml/2.2\" xmlns:gx=\"http://www.google.com/kml/ext/2.2\">\n";
-  outputStream << "\t<Document>\n\t\t<name>" << _data.logFilename << "</name>\n";
+  outputStream << "\t<Document>\n\t\t<name>" << _data.filename << "</name>\n";
   outputStream << "\t\t<Style id=\"multiTrack_n\">\n\t\t\t<IconStyle>\n\t\t\t\t<Icon>\n\t\t\t\t\t<href>" << geIconFilename << "</href>\n\t\t\t\t</Icon>\n\t\t\t</IconStyle>\n\t\t\t<LineStyle>\n\t\t\t\t<color>991081f4</color>\n\t\t\t\t<width>6</width>\n\t\t\t</LineStyle>\n\t\t</Style>\n";
   outputStream << "\t\t<Style id=\"multiTrack_h\">\n\t\t\t<IconStyle>\n\t\t\t\t<scale>0</scale>\n\t\t\t\t<Icon>\n\t\t\t\t\t<href>" << geIconFilename << "</href>\n\t\t\t\t</Icon>\n\t\t\t</IconStyle>\n\t\t\t<LineStyle>\n\t\t\t\t<color>991081f4</color>\n\t\t\t\t<width>8</width>\n\t\t\t</LineStyle>\n\t\t</Style>\n";
   outputStream << "\t\t<StyleMap id=\"multiTrack\">\n\t\t\t<Pair>\n\t\t\t\t<key>normal</key>\n\t\t\t\t<styleUrl>#multiTrack_n</styleUrl>\n\t\t\t</Pair>\n\t\t\t<Pair>\n\t\t\t\t<key>highlight</key>\n\t\t\t\t<styleUrl>#multiTrack_h</styleUrl>\n\t\t\t</Pair>\n\t\t</StyleMap>\n";
@@ -578,7 +609,7 @@ void LogsDialog::exportToGoogleEarth()
                  << origName << "</displayName>\n\t\t\t</gx:SimpleArrayField>\n";
   }
 
-  QString planeName = _data.logFilename;
+  QString planeName = _data.filename;
   int dash = planeName.indexOf("-");
   if (dash > 0) planeName = planeName.left(dash);
 

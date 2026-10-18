@@ -21,20 +21,32 @@
 
 #pragma once
 
-#include <QString>
-#include <functional>
-#include "logsdata.h"
+#include <QObject>
+#include <atomic>
+#include "logs_data.h"
 
-namespace LogParser {
+class LogsWorker : public QObject
+{
+  Q_OBJECT
 
-struct Result {
-  bool ok = false;
-  QString error;
-  LogData data;
+public:
+  explicit LogsWorker(QObject* parent = nullptr);
+
+public slots:
+  void parse_file(const QString& filename);
+  void compute_plots(const PlotRequest& request);
+  void cancel();
+
+signals:
+  void parse_ready(const LogsData& data);
+  void parse_error(const QString& message);
+  void plots_ready(const plotsCollection& plots);
+  void plots_error(const QString& message);
+  void progress(int percent);
+
+private:
+  bool is_cancelled() const;
+
+  LogsData _data;
+  std::atomic<bool> _cancelled;
 };
-
-Result parseFile(const QString& fileName,
-                 std::function<void(int)> progress = {},
-                 std::function<bool()>   cancelCheck = {});
-
-} // namespace LogParser
